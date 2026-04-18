@@ -41,8 +41,16 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
-            return Math.Sin(v).ToString();
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for sin: {expr.Left.CalcValue()}");
+            }
+            var result = Math.Sin(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for sin({v})");
+            }
+            return result.ToString();
         }
     }
 
@@ -61,8 +69,16 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
-            return Math.Cos(v).ToString();
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for cos: {expr.Left.CalcValue()}");
+            }
+            var result = Math.Cos(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for cos({v})");
+            }
+            return result.ToString();
         }
     }
 
@@ -81,12 +97,20 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for sqrt: {expr.Left.CalcValue()}");
+            }
             if (v < 0)
             {
                 throw new ParserException($"sqrt argument cannot be negative: {v}");
             }
-            return Math.Sqrt(v).ToString();
+            var result = Math.Sqrt(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for sqrt({v})");
+            }
+            return result.ToString();
         }
     }
 
@@ -105,12 +129,20 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for log: {expr.Left.CalcValue()}");
+            }
             if (v <= 0)
             {
                 throw new ParserException($"log argument must be positive: {v}");
             }
-            return Math.Log(v).ToString();
+            var result = Math.Log(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for log({v})");
+            }
+            return result.ToString();
         }
     }
 
@@ -129,8 +161,16 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
-            return Math.Abs(v).ToString();
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for abs: {expr.Left.CalcValue()}");
+            }
+            var result = Math.Abs(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for abs({v})");
+            }
+            return result.ToString();
         }
     }
 
@@ -149,9 +189,20 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var x = double.Parse(expr.Left.CalcValue());
-            var y = double.Parse(expr.Right.CalcValue());
-            return Math.Pow(x, y).ToString();
+            if (!double.TryParse(expr.Left.CalcValue(), out var x))
+            {
+                throw new ParserException($"Invalid numeric argument for pow: {expr.Left.CalcValue()}");
+            }
+            if (!double.TryParse(expr.Right.CalcValue(), out var y))
+            {
+                throw new ParserException($"Invalid numeric argument for pow: {expr.Right.CalcValue()}");
+            }
+            var result = Math.Pow(x, y);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for pow({x}, {y})");
+            }
+            return result.ToString();
         }
     }
 
@@ -170,8 +221,16 @@ namespace ExpressionParser
         
         public override string Calc(Expression expr)
         {
-            var v = double.Parse(expr.Left.CalcValue());
-            return Math.Exp(v).ToString();
+            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            {
+                throw new ParserException($"Invalid numeric argument for exp: {expr.Left.CalcValue()}");
+            }
+            var result = Math.Exp(v);
+            if (double.IsNaN(result) || double.IsInfinity(result))
+            {
+                throw new ParserException($"Invalid result for exp({v})");
+            }
+            return result.ToString();
         }
     }
 }
