@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,7 +41,7 @@ namespace ExpressionParser
                 var nextState = IsNumbericStateTransferValid(numericStr, numericParserState, expressionStr[i]);
                 if (!nextState.isValid)
                 {
-                    throw new ParserException("Parser Error");
+                    throw new ParserException("Parser Error", i, expressionStr);
                 }
                 numericParserState = nextState.updatedState;
                 numericStr = nextState.updatedNumericStr;
@@ -59,21 +59,25 @@ namespace ExpressionParser
         {
             ExpressionParserState exprParserState = ExpressionParserState.eExpectLeftExpression;
             string numericStr = String.Empty;
+            string functionName = String.Empty;
 
             var activeExpr = new Expression();
             for (var i = 0; i < expressionStr.Length; i++)
             {
-                var nextState = IsExpressionStateTransferValid(activeExpr, numericStr, exprParserState, expressionStr, i);
+                var nextState = IsExpressionStateTransferValid(activeExpr, numericStr, functionName, exprParserState, expressionStr, i);
 
                 if (nextState.updatedState != ExpressionParserState.eEnd)
                 {
                     if (!nextState.isValid)
                     {
-                        throw new ParserException("Parser Error");
+                        throw new ParserException("Parser Error", i, expressionStr);
                     }
                 }
 
                 activeExpr = nextState.updatedExpr;
+                numericStr = nextState.updatedNumericStr;
+                functionName = nextState.updatedFunctionName;
+                exprParserState = nextState.updatedState;
                 i = nextState.updateIndex;
             }
 
@@ -90,6 +94,7 @@ namespace ExpressionParser
             eExpectLeftExpression   = 1,        // Expression
             eExpectOperator         = 2,        // Operator
             eExpectRightExpression  = 4,        //
+            eExpectFunctionArg      = 8,        // Function argument (inside parentheses)
             eEnd                    = 0xFF      //
         }
 
@@ -102,17 +107,18 @@ namespace ExpressionParser
             eEnd                = 0xFF,     // Found sign or other operators
         }
 
-        private (bool isValid, ExpressionParserState updatedState, Expression updatedExpr, int updateIndex) IsExpressionStateTransferValid(Expression expr, string currentNumericStr, ExpressionParserState currentState, string expressionStr, int currentIndex)
+        private (bool isValid, ExpressionParserState updatedState, Expression updatedExpr, int updateIndex, string updatedNumericStr, string updatedFunctionName) 
+            IsExpressionStateTransferValid(Expression expr, string currentNumericStr, string currentFunctionName, ExpressionParserState currentState, string expressionStr, int currentIndex)
         {
             bool isValid = false;
             ExpressionParserState updateState = currentState;
             Expression updatedExpr = expr;
             var updateIndex = currentIndex;
-            // a expression could be start with numeric, and could not be start with operators (exclude +/-)
-            // so check expression case first
             string numericStr = currentNumericStr;
-            int bracketCount = 0;
+            string functionName = currentFunctionName;
+            Stack<char> bracketStack = new Stack<char>();
             NumericParserState numericParserState = NumericParserState.eEmpty;
+            
             for (var i = currentIndex; i < expressionStr.Length; i++)
             {
                 var incomingChar = expressionStr[i];
@@ -121,18 +127,109 @@ namespace ExpressionParser
                     continue;
                 }
 
-                // TODO: should check if bracket is part of function (i.e. "sin(3.14 / 2)"), this will be implemented later
-                // if found left bracket, just create a new expression and put it as left expr of current expr, and move active expr to the left
-                // if found right bracker, just move to active expr to its parent
-                // definitely should check bracket matching first
+                // Handle function name accumulation
+                if (currentState == ExpressionParserState.eExpectLeftExpression && Util.IsAlpha(incomingChar))
+                {
+                    functionName = functionName + incomingChar.ToString();
+                    updateIndex = i;
+                    continue;
+                }
+                
+                // Check if we have a function call (functionName followed by '(')
+                if (!string.IsNullOrEmpty(functionName) && Util.IsLeftBracket(incomingChar))
+                {
+                    var funcOp = OperatorFactory.Instance.Support(functionName.ToLower());
+                    if (funcOp != null && funcOp is FunctionOperator)
+                    {
+                        // We have a valid function call - parse the argument(s)
+                        bracketStack.Push(incomingChar);
+                        
+                        // Create a new expression with the function operator
+                        var funcExpr = new Expression();
+                        funcExpr.Operator = funcOp;
+                        funcExpr.BracketState = BracketState.eLeft;
+                        
+                        // Link it properly to the parent expression
+                        if (expr.IsValid || expr.BracketState == BracketState.eLeft)
+                        {
+                            // This shouldn't happen in normal flow, but handle it
+                            expr.Left = funcExpr;
+                        }
+                        else
+                        {
+                            // Set the function expression as the current expression's value/left
+                            expr.Value = null;
+                            expr.Left = funcExpr;
+                        }
+                        
+                        // Parse the argument expression inside the parentheses
+                        int argStartIndex = i + 1;
+                        int argEndIndex = FindMatchingBracket(expressionStr, argStartIndex, incomingChar);
+                        
+                        if (argEndIndex < 0)
+                        {
+                            throw new ParserException($"Unmatched left bracket for function '{functionName}'", i, expressionStr);
+                        }
+                        
+                        // Extract and parse the argument(s)
+                        string argStr = expressionStr.Substring(argStartIndex, argEndIndex - argStartIndex);
+                        
+                        // Handle multi-argument functions (like pow(x, y))
+                        var funcOperator = (FunctionOperator)funcOp;
+                        if (funcOperator.ArgumentCount == 2)
+                        {
+                            // Split by comma and parse each argument
+                            var argParts = SplitFunctionArguments(argStr);
+                            if (argParts.Length != 2)
+                            {
+                                throw new ParserException($"Function '{functionName}' requires 2 arguments, got {argParts.Length}", i, expressionStr);
+                            }
+                            
+                            var arg1Expr = ParseToExpr(argParts[0]);
+                            var arg2Expr = ParseToExpr(argParts[1]);
+                            funcExpr.Left = arg1Expr;
+                            funcExpr.Right = arg2Expr;
+                        }
+                        else
+                        {
+                            // Single argument function
+                            if (!string.IsNullOrWhiteSpace(argStr))
+                            {
+                                var argExpr = ParseToExpr(argStr);
+                                funcExpr.Left = argExpr;
+                            }
+                        }
+                        
+                        funcExpr.BracketState = BracketState.eClosed;
+                        
+                        // Update state and continue after the closing bracket
+                        expr = funcExpr;
+                        updatedExpr = expr;
+                        i = argEndIndex;
+                        updateIndex = argEndIndex;
+                        functionName = String.Empty;
+                        currentState = ExpressionParserState.eExpectOperator;
+                        continue;
+                    }
+                    else
+                    {
+                        // Unknown function name - treat as error
+                        throw new ParserException($"Unknown function '{functionName}'", i - functionName.Length, expressionStr, functionName);
+                    }
+                }
+                
+                // If we accumulated function name but next char is not '(' - invalid
+                if (!string.IsNullOrEmpty(functionName) && !Util.IsFunctionNameChar(incomingChar) && !Util.IsLeftBracket(incomingChar))
+                {
+                    throw new ParserException($"Invalid identifier '{functionName}' - expected '(' for function call", i - functionName.Length, expressionStr, functionName);
+                }
+
+                // Handle left bracket: push to stack and create nested expression
                 if (Util.IsLeftBracket(incomingChar))
                 {
-                    // we always allow left brackets
-                    bracketCount++;
-                    // default is expect left expression
+                    bracketStack.Push(incomingChar);
                     if (currentState == ExpressionParserState.eExpectLeftExpression)
                     {
-                        // already have a left bracket, then move to a little deep level
                         if (expr.BracketState == BracketState.eLeft)
                         {
                             var newExpr = new Expression();
@@ -142,53 +239,52 @@ namespace ExpressionParser
                         }
                         else if (expr.BracketState != BracketState.eNone)
                         {
-                            throw new ParserException("Expect left bracket but found non-left bracket");
+                            throw new ParserException("Expect left bracket but found non-left bracket", i, expressionStr);
                         }
                         expr.BracketState = BracketState.eLeft;
-                        // now active expr is left child of existng expr
                         updateIndex = i;
                         continue;
                     }
                     else if (currentState == ExpressionParserState.eExpectRightExpression)
                     {
-                        // create a new expression, set bracket state as left bracket
-                        // and move active expr to this new created expr
                         var newExpr = new Expression();
                         newExpr.BracketState = BracketState.eLeft;
-                        // newExpr.Left = new Expression();
                         expr.Right = newExpr;
                         expr = newExpr;
                         updatedExpr = newExpr;
-
-                        // now we are expecting left expression since we create a new expr
                         currentState = ExpressionParserState.eExpectLeftExpression;
                         updateIndex = i;
                         continue;
                     }
                     else
                     {
-                        throw new ParserException("Expect operator but found bracket");
+                        throw new ParserException("Expect operator but found bracket", i, expressionStr);
                     }
                 }
+                // Handle right bracket: check matching and close expression
                 else if (Util.IsRightBracket(incomingChar))
                 {
-                    // we should not allow right brackets count > left brackets count
-                    if (bracketCount <= 0)
+                    if (bracketStack.Count == 0)
                     {
-                        throw new ParserException("Bracket does not match Error1");
+                        throw new ParserException($"Unmatched right bracket '{incomingChar}'", i, expressionStr);
                     }
+                    
+                    char expectedLeftBracket = bracketStack.Pop();
+                    if (!Util.BracketsMatch(expectedLeftBracket, incomingChar))
+                    {
+                        throw new ParserException($"Bracket mismatch: expected '{Util.GetMatchingRightBracket(expectedLeftBracket)}' but found '{incomingChar}'", i, expressionStr);
+                    }
+                    
                     while (expr != null && expr.BracketState != BracketState.eLeft)
                     {
                         expr = expr.Parent;
                     }
                     if (expr == null || (expr.BracketState != BracketState.eLeft))
                     {
-                        throw new ParserException("Bracket does not match Error2");
+                        throw new ParserException($"Cannot find matching left bracket for '{incomingChar}'", i, expressionStr);
                     }
-                    bracketCount--;
-                    expr.BracketState = expr.BracketState | BracketState.eRight;
+                    expr.BracketState = BracketState.eClosed;
                     updatedExpr = expr;
-                    // bracket detection is end so update string index
                     updateIndex = i;
 
                     if (currentState == ExpressionParserState.eExpectRightExpression)
@@ -205,7 +301,7 @@ namespace ExpressionParser
                     {
                         if (!nextState.isValid)
                         {
-                            throw new ParserException("Parser Error");
+                            throw new ParserException("Parser Error", i, expressionStr);
                         }
                         numericParserState = nextState.updatedState;
                         numericStr = nextState.updatedNumericStr;
@@ -217,22 +313,25 @@ namespace ExpressionParser
                     }
                 }
 
-                // since we are changing state to operator during during numeric identification,
-                // so do not use else if to check currentState == ExpressionParserState.eExpectOperator here
+                // Handle comma separator for multi-argument functions
+                if (Util.IsComma(incomingChar) && currentState == ExpressionParserState.eExpectOperator)
+                {
+                    // Comma is used as argument separator in functions
+                    // For now, we treat it as ending the current argument expression
+                    updateIndex = i;
+                    isValid = true;
+                    return (isValid, currentState, updatedExpr, updateIndex, numericStr, functionName);
+                }
+
                 if (currentState == ExpressionParserState.eExpectOperator)
                 {
                     var op = OperatorFactory.Instance.Support(incomingChar.ToString());
                     if (op != null)
                     {
-                        // if exp is valid we should create a new exp and set the old one as left exp
-                        // else set operator directlly
-                        // TODO: bracket!
                         if (expr.IsValid || expr.BracketState == BracketState.eLeft)
                         {
                             if (expr.State != ExpressionState.eValueOnly)
                             {
-                                // check operator of existing expr and incoming operator to determine priority
-                                // if existing wins, then create a new exp, set current one as left exp of new one
                                 if (expr.BracketState == BracketState.eClosed)
                                 {
                                     if (expr.Parent != null)
@@ -248,7 +347,6 @@ namespace ExpressionParser
                                             }
                                         }
 
-                                        // has a valid expression, in this case should create a new expr, set current as left and associate parent properly
                                         if (tempExpr.Operator != null)
                                         {
                                             var newExpr = new Expression();
@@ -269,13 +367,11 @@ namespace ExpressionParser
                                     bool sourceExprHasLeftBracket = false;
                                     if (expr.BracketState == BracketState.eLeft)
                                     {
-                                        //TODO: not sure if this works for any cases...
                                         sourceExprHasLeftBracket = true;
                                     }
 
                                     if (expr.Operator.Priority == op.Priority)
                                     {
-                                        // 1+2*8/4, when processing "/"
                                         var newExpr = new Expression();
                                         if (expr.Parent != null)
                                         {
@@ -294,8 +390,6 @@ namespace ExpressionParser
                                     }
                                     else if (expr.Operator.Priority > op.Priority)
                                     {
-                                        // 100-5*10-23, when processing the second "-", 5*10 should be put as left child of new expr
-                                        // but how to determine (100 - 5*10) and - 23?
                                         while (expr.BracketState != BracketState.eLeft && expr.Parent != null)
                                         {
                                             expr = expr.Parent;
@@ -303,15 +397,9 @@ namespace ExpressionParser
                                             {
                                                 break;
                                             }
-                                            // TODO: need consider bracket?
-                                            //if ((expr.Operator != null && expr.Operator.Priority <= op.Priority) || (expr.BracketState & BracketState.eLeft) == BracketState.eLeft)
-                                            //{
-                                            //    break;
-                                            //}
                                         }
                                         if (expr.BracketState == BracketState.eLeft)
                                         {
-                                            //TODO: not sure if this works for any cases...
                                             sourceExprHasLeftBracket = true;
                                         }
                                         var newExpr = new Expression();
@@ -330,21 +418,6 @@ namespace ExpressionParser
                                     else if (expr.Operator.Priority < op.Priority)
                                     {
                                         var newExpr = new Expression();
-                                        // handle parent carefully
-                                        // TODO: check if this is correct or not?
-                                        //if (expr.Parent != null)
-                                        //{
-                                        //    expr.Parent.Right = newExpr;
-                                        //}
-                                        //System.Diagnostics.Debug.Assert(expr.Parent == null);
-                                        //if (sourceExprHasLeftBracket)
-                                        //{
-                                        //    expr.BracketState = BracketState.eNone;
-                                        //}
-                                        // create a new expr, set it as right expr of current expr
-                                        // and have the original right expr as value
-                                        // to process 1 + 2 * 3, when processing "*"
-
                                         sourceExprHasLeftBracket = false;
                                         newExpr.Left = expr.Right;
                                         expr.Right = newExpr;
@@ -352,8 +425,6 @@ namespace ExpressionParser
                                     }
                                     else
                                     {
-                                        // if incoming wins, then move right expr of existing one as left expr of new one
-                                        // and set new one as right exp
                                         var newExpr = new Expression();
                                         newExpr.Left = expr.Right;
                                         expr.Right = newExpr;
@@ -374,16 +445,14 @@ namespace ExpressionParser
                         }
                         else
                         {
-                            // TODO: throw exception?
                             System.Diagnostics.Debug.Assert(false);
                         }
                         expr.Operator = op;
                         currentState = ExpressionParserState.eExpectRightExpression;
-                        // since we have operator now, we are expect left expression so clear current numeric string
                         numericStr = String.Empty;
+                        functionName = String.Empty;
                         numericParserState = NumericParserState.eEmpty;
                     }
-                    // TODO: throw exception if cannot recorgnize operator?
                 }
                 else if (currentState == ExpressionParserState.eExpectRightExpression)
                 {
@@ -392,7 +461,7 @@ namespace ExpressionParser
                     {
                         if (!nextState.isValid)
                         {
-                            throw new ParserException("Parser Error");
+                            throw new ParserException("Parser Error", i, expressionStr);
                         }
                         numericParserState = nextState.updatedState;
                         numericStr = nextState.updatedNumericStr;
@@ -400,10 +469,7 @@ namespace ExpressionParser
                     }
                     else
                     {
-                        // expression is end so should expect operator
-                        // for now we do not care  bracket case
                         currentState = ExpressionParserState.eExpectOperator;
-                        // move index back to let identify operator works
                         i--;
                     }
                 }
@@ -412,33 +478,87 @@ namespace ExpressionParser
             }
 
             isValid = expr.IsValid;
-            return (isValid, ExpressionParserState.eEnd, updatedExpr, updateIndex);
+            
+            // Check if all brackets have been properly closed
+            if (bracketStack.Count > 0)
+            {
+                char unmatchedBracket = bracketStack.Peek();
+                throw new ParserException($"Unmatched left bracket '{unmatchedBracket}' - expression has {bracketStack.Count} unclosed bracket(s)", updateIndex, expressionStr);
+            }
+            
+            return (isValid, ExpressionParserState.eEnd, updatedExpr, updateIndex, numericStr, functionName);
+        }
+
+        /// <summary>
+        /// Find the matching closing bracket position
+        /// </summary>
+        private int FindMatchingBracket(string expressionStr, int startIndex, char openBracket)
+        {
+            char closeBracket = Util.GetMatchingRightBracket(openBracket);
+            int depth = 1;
+            
+            for (int i = startIndex; i < expressionStr.Length; i++)
+            {
+                char c = expressionStr[i];
+                if (c == openBracket)
+                {
+                    depth++;
+                }
+                else if (c == closeBracket)
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+            
+            return -1; // No matching bracket found
+        }
+
+        /// <summary>
+        /// Split function arguments by comma, handling nested expressions
+        /// </summary>
+        private string[] SplitFunctionArguments(string argStr)
+        {
+            var result = new List<string>();
+            int start = 0;
+            int depth = 0;
+            
+            for (int i = 0; i < argStr.Length; i++)
+            {
+                char c = argStr[i];
+                if (Util.IsLeftBracket(c))
+                {
+                    depth++;
+                }
+                else if (Util.IsRightBracket(c))
+                {
+                    depth--;
+                }
+                else if (c == ',' && depth == 0)
+                {
+                    result.Add(argStr.Substring(start, i - start).Trim());
+                    start = i + 1;
+                }
+            }
+            
+            // Add the last argument
+            result.Add(argStr.Substring(start).Trim());
+            
+            return result.ToArray();
         }
 
         /// <summary>
         /// Try to add incoming char to current numeric string
         /// </summary>
-        /// <param name="currentNumberStr"></param>
-        /// <param name="currentState"></param>
-        /// <param name="incomingChar"></param>
-        /// <returns>True if incomingchar is valid and </returns>
         private (bool isValid, string updatedNumericStr, NumericParserState updatedState) IsNumbericStateTransferValid(string currentNumericStr, NumericParserState currentState, char incomingChar)
         {
             bool isValid = false;
             string updatedNumericStr = currentNumericStr;
             NumericParserState updatedState = currentState;
-            // default currentNumericStr is empty so default to 0
-            // Check table as following to determine which input is acceptable
-            // |---------------currentState------------------|--what input is acceptable----|
-            // |  eEmpty  | eHasSign | eHasPoint |eHasNumeric|   Sign   |  Point  | Numeric |
-            // |    V                                        |    V          V         V    |
-            // |               V                             |               V         V    |
-            // |                           V                 |                         V    |
-            // |                                      V      |               V         V    |
-            // |               V                      V      |               V         V    |
-            // |                           V          V      |                         V    |
-            // |               V           V                 |                         V    |
-            // |               V           V          V      |                         V    |
+            
             bool isNumeric = Util.IsNumeric(incomingChar);
             bool isPoint = Util.IsPoint(incomingChar);
             bool isSign = Util.IsSign(incomingChar);
@@ -449,7 +569,7 @@ namespace ExpressionParser
                 {
                     updatedState = NumericParserState.eHasNumeric;
                     isValid = true;
-                    updatedNumericStr = updatedNumericStr + incomingChar.ToString();    // To number and append to existing number
+                    updatedNumericStr = updatedNumericStr + incomingChar.ToString();
                 }
                 else if (isPoint)
                 {
@@ -457,18 +577,18 @@ namespace ExpressionParser
                     isValid = true;
                     if (string.IsNullOrEmpty(currentNumericStr))
                     {
-                        updatedNumericStr = "0" + incomingChar.ToString();  // To "0."
+                        updatedNumericStr = "0" + incomingChar.ToString();
                     }
                     else
                     {
-                        updatedNumericStr = currentNumericStr + incomingChar.ToString();  // To "0."
+                        updatedNumericStr = currentNumericStr + incomingChar.ToString();
                     }
                 }
                 else if (isSign)
                 {
                     updatedState = NumericParserState.eHasSign;
                     isValid = true;
-                    updatedNumericStr = incomingChar.ToString();  // To "+" or "-"
+                    updatedNumericStr = incomingChar.ToString();
                 }
                 else
                 {
@@ -481,28 +601,27 @@ namespace ExpressionParser
                 bool allowPoint = true;
                 if ((currentState & NumericParserState.eHasSign) == NumericParserState.eHasSign)
                 {
-                    allowSign = false;  // Start with "+" or "-", so no "+" or "-" anymore
+                    allowSign = false;
                 }
                 if ((currentState & NumericParserState.eHasPoint) == NumericParserState.eHasPoint)
                 {
-                    allowSign = false;  // Has point so no point anymore
-                    allowPoint = false; // Has point so no "+" or "-" anymore
+                    allowSign = false;
+                    allowPoint = false;
                 }
                 if ((currentState & NumericParserState.eHasNumeric) == NumericParserState.eHasNumeric)
                 {
-                    allowSign = false;  // Has numeric so no "+" or "-" anymore
+                    allowSign = false;
                 }
 
-                // Run here we at least current state is valid so do not check current string is valid or not
                 if (isNumeric)
                 {
-                    updatedNumericStr = currentNumericStr + incomingChar.ToString();  // append directlly
+                    updatedNumericStr = currentNumericStr + incomingChar.ToString();
                     updatedState = updatedState | NumericParserState.eHasNumeric;
                     isValid = true;
                 }
                 else if (isPoint && allowPoint)
                 {
-                    updatedNumericStr = currentNumericStr + incomingChar.ToString();  // append directlly
+                    updatedNumericStr = currentNumericStr + incomingChar.ToString();
                     updatedState = updatedState | NumericParserState.eHasPoint;
                     isValid = true;
                 }
@@ -510,40 +629,29 @@ namespace ExpressionParser
                 {
                     if (allowSign)
                     {
-                        updatedNumericStr = currentNumericStr + incomingChar.ToString();  // append directlly
+                        updatedNumericStr = currentNumericStr + incomingChar.ToString();
                         updatedState = updatedState | NumericParserState.eHasSign;
                         isValid = true;
                     }
-                    else if ((currentState & NumericParserState.eHasNumeric) == NumericParserState.eHasNumeric)  // only end if we do have a numeric
+                    else if ((currentState & NumericParserState.eHasNumeric) == NumericParserState.eHasNumeric)
                     {
-                        // if end of point is still not a valid end...
-                        // TODO: found a better check
                         if (updatedNumericStr[updatedNumericStr.Length - 1] != '.')
                         {
-                            updatedState = NumericParserState.eEnd; // this sign should be a operator
+                            updatedState = NumericParserState.eEnd;
                         }
                     }
                 }
 
-                // Run here we might found that incoming char is a sign, or a operator, or bracket, or even one letter of a function name.
-                // So check if we need end numeric parsing
                 if (!isNumeric && !isPoint && (updatedState & NumericParserState.eHasNumeric) == NumericParserState.eHasNumeric)
                 {
-                    // if end of point is still not a valid end...
-                    // TODO: found a better check
                     if (updatedNumericStr[updatedNumericStr.Length - 1] != '.')
                     {
-                        updatedState = NumericParserState.eEnd; // this sign should be a operator
+                        updatedState = NumericParserState.eEnd;
                     }
                 }
             }
 
             return (isValid, updatedNumericStr, updatedState);
         }
-
-        //private bool IsOperatorStringTransferValid(Expression expr, OperatorParserState currentState, char incomingChar)
-        //{
-        //    return false;
-        //}
     }
 }

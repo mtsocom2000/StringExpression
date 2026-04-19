@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,10 +11,19 @@ namespace ExpressionParser
         private OperatorFactory()
         {
             _supportOperators = new List<Operator>();
+            // Basic operators
             _supportOperators.Add(new OperatorAdd());
             _supportOperators.Add(new OperatorSub());
             _supportOperators.Add(new OperatorMultiple());
             _supportOperators.Add(new OperatorDivide());
+            // Function operators
+            _supportOperators.Add(new OperatorSin());
+            _supportOperators.Add(new OperatorCos());
+            _supportOperators.Add(new OperatorSqrt());
+            _supportOperators.Add(new OperatorLog());
+            _supportOperators.Add(new OperatorAbs());
+            _supportOperators.Add(new OperatorPow());
+            _supportOperators.Add(new OperatorExp());
         }
         private static object _locker = new object();
         private static OperatorFactory instance = null;
