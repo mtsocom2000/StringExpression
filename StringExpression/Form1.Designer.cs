@@ -35,6 +35,7 @@ namespace WindowsFormsApp1
             this.panelNumbers = new System.Windows.Forms.Panel();
             this.panelOperators = new System.Windows.Forms.Panel();
             this.panelFunctions = new System.Windows.Forms.Panel();
+            this.btnBackspace = new System.Windows.Forms.Button();
             this.btn0 = new System.Windows.Forms.Button();
             this.btn1 = new System.Windows.Forms.Button();
             this.btn2 = new System.Windows.Forms.Button();
@@ -88,6 +89,7 @@ namespace WindowsFormsApp1
             this.btnCalculate.Size = new System.Drawing.Size(94, 40);
             this.btnCalculate.TabIndex = 1;
             this.btnCalculate.Text = "计算";
+            this.btnCalculate.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnCalculate.UseVisualStyleBackColor = false;
             this.btnCalculate.Click += new System.EventHandler(this.btnCalculate_Click);
             //
@@ -101,6 +103,7 @@ namespace WindowsFormsApp1
             this.btnClear.Size = new System.Drawing.Size(94, 40);
             this.btnClear.TabIndex = 2;
             this.btnClear.Text = "清空";
+            this.btnClear.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnClear.UseVisualStyleBackColor = false;
             this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             //
@@ -118,6 +121,7 @@ namespace WindowsFormsApp1
             //
             // panelNumbers
             //
+            this.panelNumbers.Controls.Add(this.btnBackspace);
             this.panelNumbers.Controls.Add(this.btnDot);
             this.panelNumbers.Controls.Add(this.btn0);
             this.panelNumbers.Controls.Add(this.btn9);
@@ -131,17 +135,31 @@ namespace WindowsFormsApp1
             this.panelNumbers.Controls.Add(this.btn1);
             this.panelNumbers.Location = new System.Drawing.Point(12, 95);
             this.panelNumbers.Name = "panelNumbers";
-            this.panelNumbers.Size = new System.Drawing.Size(180, 180);
+            this.panelNumbers.Size = new System.Drawing.Size(185, 185);
             this.panelNumbers.TabIndex = 4;
+            //
+            // btnBackspace
+            //
+            this.btnBackspace.BackColor = System.Drawing.Color.LightPink;
+            this.btnBackspace.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btnBackspace.Location = new System.Drawing.Point(0, 135);
+            this.btnBackspace.Name = "btnBackspace";
+            this.btnBackspace.Size = new System.Drawing.Size(55, 40);
+            this.btnBackspace.TabIndex = 12;
+            this.btnBackspace.Text = "⌫";
+            this.btnBackspace.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnBackspace.UseVisualStyleBackColor = false;
+            this.btnBackspace.Click += new System.EventHandler(this.btnBackspace_Click);
             //
             // btn0
             //
             this.btn0.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn0.Location = new System.Drawing.Point(60, 150);
+            this.btn0.Location = new System.Drawing.Point(60, 135);
             this.btn0.Name = "btn0";
-            this.btn0.Size = new System.Drawing.Size(55, 25);
+            this.btn0.Size = new System.Drawing.Size(55, 40);
             this.btn0.TabIndex = 10;
             this.btn0.Text = "0";
+            this.btn0.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn0.UseVisualStyleBackColor = true;
             this.btn0.Click += new System.EventHandler(this.btnNumber_Click);
             //
@@ -150,9 +168,10 @@ namespace WindowsFormsApp1
             this.btn1.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btn1.Location = new System.Drawing.Point(0, 0);
             this.btn1.Name = "btn1";
-            this.btn1.Size = new System.Drawing.Size(55, 25);
+            this.btn1.Size = new System.Drawing.Size(55, 40);
             this.btn1.TabIndex = 1;
             this.btn1.Text = "1";
+            this.btn1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn1.UseVisualStyleBackColor = true;
             this.btn1.Click += new System.EventHandler(this.btnNumber_Click);
             //
@@ -161,9 +180,10 @@ namespace WindowsFormsApp1
             this.btn2.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btn2.Location = new System.Drawing.Point(60, 0);
             this.btn2.Name = "btn2";
-            this.btn2.Size = new System.Drawing.Size(55, 25);
+            this.btn2.Size = new System.Drawing.Size(55, 40);
             this.btn2.TabIndex = 2;
             this.btn2.Text = "2";
+            this.btn2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn2.UseVisualStyleBackColor = true;
             this.btn2.Click += new System.EventHandler(this.btnNumber_Click);
             //
@@ -172,86 +192,94 @@ namespace WindowsFormsApp1
             this.btn3.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btn3.Location = new System.Drawing.Point(120, 0);
             this.btn3.Name = "btn3";
-            this.btn3.Size = new System.Drawing.Size(55, 25);
+            this.btn3.Size = new System.Drawing.Size(55, 40);
             this.btn3.TabIndex = 3;
             this.btn3.Text = "3";
+            this.btn3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn3.UseVisualStyleBackColor = true;
             this.btn3.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn4
             //
             this.btn4.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn4.Location = new System.Drawing.Point(0, 30);
+            this.btn4.Location = new System.Drawing.Point(0, 45);
             this.btn4.Name = "btn4";
-            this.btn4.Size = new System.Drawing.Size(55, 25);
+            this.btn4.Size = new System.Drawing.Size(55, 40);
             this.btn4.TabIndex = 4;
             this.btn4.Text = "4";
+            this.btn4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn4.UseVisualStyleBackColor = true;
             this.btn4.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn5
             //
             this.btn5.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn5.Location = new System.Drawing.Point(60, 30);
+            this.btn5.Location = new System.Drawing.Point(60, 45);
             this.btn5.Name = "btn5";
-            this.btn5.Size = new System.Drawing.Size(55, 25);
+            this.btn5.Size = new System.Drawing.Size(55, 40);
             this.btn5.TabIndex = 5;
             this.btn5.Text = "5";
+            this.btn5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn5.UseVisualStyleBackColor = true;
             this.btn5.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn6
             //
             this.btn6.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn6.Location = new System.Drawing.Point(120, 30);
+            this.btn6.Location = new System.Drawing.Point(120, 45);
             this.btn6.Name = "btn6";
-            this.btn6.Size = new System.Drawing.Size(55, 25);
+            this.btn6.Size = new System.Drawing.Size(55, 40);
             this.btn6.TabIndex = 6;
             this.btn6.Text = "6";
+            this.btn6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn6.UseVisualStyleBackColor = true;
             this.btn6.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn7
             //
             this.btn7.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn7.Location = new System.Drawing.Point(0, 60);
+            this.btn7.Location = new System.Drawing.Point(0, 90);
             this.btn7.Name = "btn7";
-            this.btn7.Size = new System.Drawing.Size(55, 25);
+            this.btn7.Size = new System.Drawing.Size(55, 40);
             this.btn7.TabIndex = 7;
             this.btn7.Text = "7";
+            this.btn7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn7.UseVisualStyleBackColor = true;
             this.btn7.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn8
             //
             this.btn8.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn8.Location = new System.Drawing.Point(60, 60);
+            this.btn8.Location = new System.Drawing.Point(60, 90);
             this.btn8.Name = "btn8";
-            this.btn8.Size = new System.Drawing.Size(55, 25);
+            this.btn8.Size = new System.Drawing.Size(55, 40);
             this.btn8.TabIndex = 8;
             this.btn8.Text = "8";
+            this.btn8.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn8.UseVisualStyleBackColor = true;
             this.btn8.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btn9
             //
             this.btn9.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btn9.Location = new System.Drawing.Point(120, 60);
+            this.btn9.Location = new System.Drawing.Point(120, 90);
             this.btn9.Name = "btn9";
-            this.btn9.Size = new System.Drawing.Size(55, 25);
+            this.btn9.Size = new System.Drawing.Size(55, 40);
             this.btn9.TabIndex = 9;
             this.btn9.Text = "9";
+            this.btn9.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btn9.UseVisualStyleBackColor = true;
             this.btn9.Click += new System.EventHandler(this.btnNumber_Click);
             //
             // btnDot
             //
             this.btnDot.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnDot.Location = new System.Drawing.Point(120, 150);
+            this.btnDot.Location = new System.Drawing.Point(120, 135);
             this.btnDot.Name = "btnDot";
-            this.btnDot.Size = new System.Drawing.Size(55, 25);
+            this.btnDot.Size = new System.Drawing.Size(55, 40);
             this.btnDot.TabIndex = 11;
             this.btnDot.Text = ".";
+            this.btnDot.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnDot.UseVisualStyleBackColor = true;
             this.btnDot.Click += new System.EventHandler(this.btnNumber_Click);
             //
@@ -263,9 +291,9 @@ namespace WindowsFormsApp1
             this.panelOperators.Controls.Add(this.btnMultiply);
             this.panelOperators.Controls.Add(this.btnMinus);
             this.panelOperators.Controls.Add(this.btnPlus);
-            this.panelOperators.Location = new System.Drawing.Point(200, 95);
+            this.panelOperators.Location = new System.Drawing.Point(205, 95);
             this.panelOperators.Name = "panelOperators";
-            this.panelOperators.Size = new System.Drawing.Size(180, 180);
+            this.panelOperators.Size = new System.Drawing.Size(185, 95);
             this.panelOperators.TabIndex = 5;
             //
             // btnPlus
@@ -274,9 +302,10 @@ namespace WindowsFormsApp1
             this.btnPlus.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnPlus.Location = new System.Drawing.Point(0, 0);
             this.btnPlus.Name = "btnPlus";
-            this.btnPlus.Size = new System.Drawing.Size(55, 25);
+            this.btnPlus.Size = new System.Drawing.Size(55, 40);
             this.btnPlus.TabIndex = 12;
             this.btnPlus.Text = "+";
+            this.btnPlus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnPlus.UseVisualStyleBackColor = false;
             this.btnPlus.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -286,9 +315,10 @@ namespace WindowsFormsApp1
             this.btnMinus.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnMinus.Location = new System.Drawing.Point(60, 0);
             this.btnMinus.Name = "btnMinus";
-            this.btnMinus.Size = new System.Drawing.Size(55, 25);
+            this.btnMinus.Size = new System.Drawing.Size(55, 40);
             this.btnMinus.TabIndex = 13;
             this.btnMinus.Text = "-";
+            this.btnMinus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnMinus.UseVisualStyleBackColor = false;
             this.btnMinus.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -298,9 +328,10 @@ namespace WindowsFormsApp1
             this.btnMultiply.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnMultiply.Location = new System.Drawing.Point(120, 0);
             this.btnMultiply.Name = "btnMultiply";
-            this.btnMultiply.Size = new System.Drawing.Size(55, 25);
+            this.btnMultiply.Size = new System.Drawing.Size(55, 40);
             this.btnMultiply.TabIndex = 14;
             this.btnMultiply.Text = "*";
+            this.btnMultiply.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnMultiply.UseVisualStyleBackColor = false;
             this.btnMultiply.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -308,11 +339,12 @@ namespace WindowsFormsApp1
             //
             this.btnDivide.BackColor = System.Drawing.Color.LightBlue;
             this.btnDivide.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnDivide.Location = new System.Drawing.Point(0, 30);
+            this.btnDivide.Location = new System.Drawing.Point(0, 45);
             this.btnDivide.Name = "btnDivide";
-            this.btnDivide.Size = new System.Drawing.Size(55, 25);
+            this.btnDivide.Size = new System.Drawing.Size(55, 40);
             this.btnDivide.TabIndex = 15;
             this.btnDivide.Text = "/";
+            this.btnDivide.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnDivide.UseVisualStyleBackColor = false;
             this.btnDivide.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -320,11 +352,12 @@ namespace WindowsFormsApp1
             //
             this.btnLeftParen.BackColor = System.Drawing.Color.LightYellow;
             this.btnLeftParen.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnLeftParen.Location = new System.Drawing.Point(60, 30);
+            this.btnLeftParen.Location = new System.Drawing.Point(60, 45);
             this.btnLeftParen.Name = "btnLeftParen";
-            this.btnLeftParen.Size = new System.Drawing.Size(55, 25);
+            this.btnLeftParen.Size = new System.Drawing.Size(55, 40);
             this.btnLeftParen.TabIndex = 16;
             this.btnLeftParen.Text = "(";
+            this.btnLeftParen.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnLeftParen.UseVisualStyleBackColor = false;
             this.btnLeftParen.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -332,11 +365,12 @@ namespace WindowsFormsApp1
             //
             this.btnRightParen.BackColor = System.Drawing.Color.LightYellow;
             this.btnRightParen.Font = new System.Drawing.Font("Microsoft YaHei UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnRightParen.Location = new System.Drawing.Point(120, 30);
+            this.btnRightParen.Location = new System.Drawing.Point(120, 45);
             this.btnRightParen.Name = "btnRightParen";
-            this.btnRightParen.Size = new System.Drawing.Size(55, 25);
+            this.btnRightParen.Size = new System.Drawing.Size(55, 40);
             this.btnRightParen.TabIndex = 17;
             this.btnRightParen.Text = ")";
+            this.btnRightParen.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnRightParen.UseVisualStyleBackColor = false;
             this.btnRightParen.Click += new System.EventHandler(this.btnOperator_Click);
             //
@@ -357,9 +391,9 @@ namespace WindowsFormsApp1
             this.panelFunctions.Controls.Add(this.btnTan);
             this.panelFunctions.Controls.Add(this.btnCos);
             this.panelFunctions.Controls.Add(this.btnSin);
-            this.panelFunctions.Location = new System.Drawing.Point(12, 280);
+            this.panelFunctions.Location = new System.Drawing.Point(12, 290);
             this.panelFunctions.Name = "panelFunctions";
-            this.panelFunctions.Size = new System.Drawing.Size(560, 140);
+            this.panelFunctions.Size = new System.Drawing.Size(560, 80);
             this.panelFunctions.TabIndex = 6;
             //
             // btnSin
@@ -368,9 +402,10 @@ namespace WindowsFormsApp1
             this.btnSin.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnSin.Location = new System.Drawing.Point(0, 0);
             this.btnSin.Name = "btnSin";
-            this.btnSin.Size = new System.Drawing.Size(65, 25);
+            this.btnSin.Size = new System.Drawing.Size(65, 35);
             this.btnSin.TabIndex = 18;
             this.btnSin.Text = "sin";
+            this.btnSin.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnSin.UseVisualStyleBackColor = false;
             this.btnSin.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -380,9 +415,10 @@ namespace WindowsFormsApp1
             this.btnCos.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnCos.Location = new System.Drawing.Point(70, 0);
             this.btnCos.Name = "btnCos";
-            this.btnCos.Size = new System.Drawing.Size(65, 25);
+            this.btnCos.Size = new System.Drawing.Size(65, 35);
             this.btnCos.TabIndex = 19;
             this.btnCos.Text = "cos";
+            this.btnCos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnCos.UseVisualStyleBackColor = false;
             this.btnCos.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -392,9 +428,10 @@ namespace WindowsFormsApp1
             this.btnTan.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnTan.Location = new System.Drawing.Point(140, 0);
             this.btnTan.Name = "btnTan";
-            this.btnTan.Size = new System.Drawing.Size(65, 25);
+            this.btnTan.Size = new System.Drawing.Size(65, 35);
             this.btnTan.TabIndex = 20;
             this.btnTan.Text = "tan";
+            this.btnTan.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnTan.UseVisualStyleBackColor = false;
             this.btnTan.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -404,9 +441,10 @@ namespace WindowsFormsApp1
             this.btnSqrt.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnSqrt.Location = new System.Drawing.Point(210, 0);
             this.btnSqrt.Name = "btnSqrt";
-            this.btnSqrt.Size = new System.Drawing.Size(65, 25);
+            this.btnSqrt.Size = new System.Drawing.Size(65, 35);
             this.btnSqrt.TabIndex = 21;
             this.btnSqrt.Text = "sqrt";
+            this.btnSqrt.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnSqrt.UseVisualStyleBackColor = false;
             this.btnSqrt.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -416,9 +454,10 @@ namespace WindowsFormsApp1
             this.btnLog.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnLog.Location = new System.Drawing.Point(280, 0);
             this.btnLog.Name = "btnLog";
-            this.btnLog.Size = new System.Drawing.Size(65, 25);
+            this.btnLog.Size = new System.Drawing.Size(65, 35);
             this.btnLog.TabIndex = 22;
             this.btnLog.Text = "log";
+            this.btnLog.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnLog.UseVisualStyleBackColor = false;
             this.btnLog.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -428,9 +467,10 @@ namespace WindowsFormsApp1
             this.btnLog10.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnLog10.Location = new System.Drawing.Point(350, 0);
             this.btnLog10.Name = "btnLog10";
-            this.btnLog10.Size = new System.Drawing.Size(65, 25);
+            this.btnLog10.Size = new System.Drawing.Size(65, 35);
             this.btnLog10.TabIndex = 23;
             this.btnLog10.Text = "log10";
+            this.btnLog10.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnLog10.UseVisualStyleBackColor = false;
             this.btnLog10.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -440,9 +480,10 @@ namespace WindowsFormsApp1
             this.btnLn.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnLn.Location = new System.Drawing.Point(420, 0);
             this.btnLn.Name = "btnLn";
-            this.btnLn.Size = new System.Drawing.Size(65, 25);
+            this.btnLn.Size = new System.Drawing.Size(65, 35);
             this.btnLn.TabIndex = 24;
             this.btnLn.Text = "ln";
+            this.btnLn.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnLn.UseVisualStyleBackColor = false;
             this.btnLn.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -452,9 +493,10 @@ namespace WindowsFormsApp1
             this.btnAbs.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnAbs.Location = new System.Drawing.Point(495, 0);
             this.btnAbs.Name = "btnAbs";
-            this.btnAbs.Size = new System.Drawing.Size(60, 25);
+            this.btnAbs.Size = new System.Drawing.Size(60, 35);
             this.btnAbs.TabIndex = 25;
             this.btnAbs.Text = "abs";
+            this.btnAbs.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnAbs.UseVisualStyleBackColor = false;
             this.btnAbs.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -462,11 +504,12 @@ namespace WindowsFormsApp1
             //
             this.btnPow.BackColor = System.Drawing.Color.Plum;
             this.btnPow.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnPow.Location = new System.Drawing.Point(0, 30);
+            this.btnPow.Location = new System.Drawing.Point(0, 40);
             this.btnPow.Name = "btnPow";
-            this.btnPow.Size = new System.Drawing.Size(65, 25);
+            this.btnPow.Size = new System.Drawing.Size(65, 35);
             this.btnPow.TabIndex = 26;
             this.btnPow.Text = "pow";
+            this.btnPow.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnPow.UseVisualStyleBackColor = false;
             this.btnPow.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -474,11 +517,12 @@ namespace WindowsFormsApp1
             //
             this.btnExp.BackColor = System.Drawing.Color.Plum;
             this.btnExp.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnExp.Location = new System.Drawing.Point(70, 30);
+            this.btnExp.Location = new System.Drawing.Point(70, 40);
             this.btnExp.Name = "btnExp";
-            this.btnExp.Size = new System.Drawing.Size(65, 25);
+            this.btnExp.Size = new System.Drawing.Size(65, 35);
             this.btnExp.TabIndex = 27;
             this.btnExp.Text = "exp";
+            this.btnExp.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnExp.UseVisualStyleBackColor = false;
             this.btnExp.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -486,11 +530,12 @@ namespace WindowsFormsApp1
             //
             this.btnAsin.BackColor = System.Drawing.Color.LightGreen;
             this.btnAsin.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnAsin.Location = new System.Drawing.Point(140, 30);
+            this.btnAsin.Location = new System.Drawing.Point(140, 40);
             this.btnAsin.Name = "btnAsin";
-            this.btnAsin.Size = new System.Drawing.Size(65, 25);
+            this.btnAsin.Size = new System.Drawing.Size(65, 35);
             this.btnAsin.TabIndex = 28;
             this.btnAsin.Text = "asin";
+            this.btnAsin.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnAsin.UseVisualStyleBackColor = false;
             this.btnAsin.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -498,11 +543,12 @@ namespace WindowsFormsApp1
             //
             this.btnAcos.BackColor = System.Drawing.Color.LightGreen;
             this.btnAcos.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnAcos.Location = new System.Drawing.Point(210, 30);
+            this.btnAcos.Location = new System.Drawing.Point(210, 40);
             this.btnAcos.Name = "btnAcos";
-            this.btnAcos.Size = new System.Drawing.Size(65, 25);
+            this.btnAcos.Size = new System.Drawing.Size(65, 35);
             this.btnAcos.TabIndex = 29;
             this.btnAcos.Text = "acos";
+            this.btnAcos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnAcos.UseVisualStyleBackColor = false;
             this.btnAcos.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -510,11 +556,12 @@ namespace WindowsFormsApp1
             //
             this.btnAtan.BackColor = System.Drawing.Color.LightGreen;
             this.btnAtan.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnAtan.Location = new System.Drawing.Point(280, 30);
+            this.btnAtan.Location = new System.Drawing.Point(280, 40);
             this.btnAtan.Name = "btnAtan";
-            this.btnAtan.Size = new System.Drawing.Size(65, 25);
+            this.btnAtan.Size = new System.Drawing.Size(65, 35);
             this.btnAtan.TabIndex = 30;
             this.btnAtan.Text = "atan";
+            this.btnAtan.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnAtan.UseVisualStyleBackColor = false;
             this.btnAtan.Click += new System.EventHandler(this.btnFunction_Click);
             //
@@ -522,11 +569,12 @@ namespace WindowsFormsApp1
             //
             this.btnPi.BackColor = System.Drawing.Color.Khaki;
             this.btnPi.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnPi.Location = new System.Drawing.Point(350, 30);
+            this.btnPi.Location = new System.Drawing.Point(350, 40);
             this.btnPi.Name = "btnPi";
-            this.btnPi.Size = new System.Drawing.Size(65, 25);
+            this.btnPi.Size = new System.Drawing.Size(65, 35);
             this.btnPi.TabIndex = 31;
             this.btnPi.Text = "π";
+            this.btnPi.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnPi.UseVisualStyleBackColor = false;
             this.btnPi.Click += new System.EventHandler(this.btnConstant_Click);
             //
@@ -534,18 +582,19 @@ namespace WindowsFormsApp1
             //
             this.btnE.BackColor = System.Drawing.Color.Khaki;
             this.btnE.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnE.Location = new System.Drawing.Point(420, 30);
+            this.btnE.Location = new System.Drawing.Point(420, 40);
             this.btnE.Name = "btnE";
-            this.btnE.Size = new System.Drawing.Size(65, 25);
+            this.btnE.Size = new System.Drawing.Size(65, 35);
             this.btnE.TabIndex = 32;
             this.btnE.Text = "e";
+            this.btnE.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnE.UseVisualStyleBackColor = false;
             this.btnE.Click += new System.EventHandler(this.btnConstant_Click);
             //
             // lblFunctions
             //
             this.lblFunctions.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.lblFunctions.Location = new System.Drawing.Point(12, 260);
+            this.lblFunctions.Location = new System.Drawing.Point(12, 270);
             this.lblFunctions.Name = "lblFunctions";
             this.lblFunctions.Size = new System.Drawing.Size(100, 20);
             this.lblFunctions.TabIndex = 7;
@@ -555,7 +604,7 @@ namespace WindowsFormsApp1
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(584, 431);
+            this.ClientSize = new System.Drawing.Size(584, 381);
             this.Controls.Add(this.lblFunctions);
             this.Controls.Add(this.panelFunctions);
             this.Controls.Add(this.panelOperators);
@@ -583,6 +632,7 @@ namespace WindowsFormsApp1
         private System.Windows.Forms.Panel panelNumbers;
         private System.Windows.Forms.Panel panelOperators;
         private System.Windows.Forms.Panel panelFunctions;
+        private System.Windows.Forms.Button btnBackspace;
         private System.Windows.Forms.Button btn0;
         private System.Windows.Forms.Button btn1;
         private System.Windows.Forms.Button btn2;

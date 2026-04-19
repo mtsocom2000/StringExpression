@@ -140,6 +140,19 @@ namespace WindowsFormsApp1
         }
 
         /// <summary>
+        /// Delete the last character from the expression textbox (Backspace)
+        /// </summary>
+        private void btnBackspace_Click(object sender, EventArgs e)
+        {
+            if (txtExpression.Text.Length > 0)
+            {
+                txtExpression.Text = txtExpression.Text.Substring(0, txtExpression.Text.Length - 1);
+                txtExpression.Focus();
+                txtExpression.SelectionStart = txtExpression.Text.Length;
+            }
+        }
+
+        /// <summary>
         /// Allow keyboard input in the textbox
         /// </summary>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
