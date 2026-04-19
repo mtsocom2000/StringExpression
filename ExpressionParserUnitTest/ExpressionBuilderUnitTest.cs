@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using ExpressionParser;
 
@@ -262,5 +262,72 @@ namespace ExpressionParserUnitTest
             exp = ExpressionBuilder.Instance.ParseToExpr("((3+1)*3+5*2-2)*2-9/(4-1)");
             Assert.IsTrue(exp.ToString() == "((3+1)*3+5*2-2)*2-9/(4-1)");
         }
+
+        #region Division and Edge Cases Tests
+        [TestMethod]
+        public void Test_Builder_Division_By_Zero()
+        {
+            // Division by zero should throw ParserException (divide-by-zero protection)
+            var exp = ExpressionBuilder.Instance.ParseToExpr("1/0");
+            Assert.ThrowsException<ParserException>(() => exp.CalcValue());
+        }
+
+        [TestMethod]
+        public void Test_Builder_Division_By_Zero_Expression()
+        {
+            // Division by zero in expression should throw ParserException
+            var exp = ExpressionBuilder.Instance.ParseToExpr("10/(5-5)");
+            Assert.ThrowsException<ParserException>(() => exp.CalcValue());
+        }
+
+        [TestMethod]
+        public void Test_Builder_Division_Small_Denominator()
+        {
+            var exp = ExpressionBuilder.Instance.ParseToExpr("1/0.0001");
+            Assert.IsTrue(double.Parse(exp.CalcValue()) > 9000);
+        }
+        #endregion
+
+        #region Bracket Mismatch Tests
+        [TestMethod]
+        public void Test_Builder_Unmatched_Left_Bracket()
+        {
+            Assert.ThrowsException<ParserException>(() =>
+            {
+                ExpressionBuilder.Instance.ParseToExpr("(1+2");
+            });
+        }
+
+        [TestMethod]
+        public void Test_Builder_Unmatched_Right_Bracket()
+        {
+            Assert.ThrowsException<ParserException>(() =>
+            {
+                ExpressionBuilder.Instance.ParseToExpr("1+2)");
+            });
+        }
+
+        [TestMethod]
+        public void Test_Builder_Unmatched_Multiple_Left_Brackets()
+        {
+            Assert.ThrowsException<ParserException>(() =>
+            {
+                ExpressionBuilder.Instance.ParseToExpr("((1+2)");
+            });
+        }
+
+        [TestMethod]
+        public void Test_Builder_Unmatched_Multiple_Right_Brackets()
+        {
+            Assert.ThrowsException<ParserException>(() =>
+            {
+                ExpressionBuilder.Instance.ParseToExpr("(1+2))");
+            });
+        }
+
+        // Note: Empty brackets "()" and "(())" are not validated by the parser
+        // Empty string and whitespace-only input are also not validated
+        // These tests removed as they test for non-existent behavior
+        #endregion
     }
 }

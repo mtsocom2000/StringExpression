@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -115,8 +115,16 @@ namespace ExpressionParser
         }
         public override string Calc(Expression expr)
         {
-            // TODO
-            var v = double.Parse(expr.Left.CalcValue()) / double.Parse(expr.Right.CalcValue());
+            var leftValue = double.Parse(expr.Left.CalcValue());
+            var rightValue = double.Parse(expr.Right.CalcValue());
+            
+            // Check for division by zero
+            if (rightValue == 0)
+            {
+                throw new ParserException("Division by zero is not allowed");
+            }
+            
+            var v = leftValue / rightValue;
             return v.ToString();
         }
         public override int Priority
