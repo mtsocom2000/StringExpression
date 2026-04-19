@@ -17,10 +17,19 @@ namespace ExpressionParser
             _supportOperators.Add(new OperatorMultiple());
             _supportOperators.Add(new OperatorDivide());
             // Function operators
+            // Math functions
             _supportOperators.Add(new OperatorSin());
             _supportOperators.Add(new OperatorCos());
+            _supportOperators.Add(new OperatorTan());
+            _supportOperators.Add(new OperatorAsin());
+            _supportOperators.Add(new OperatorAcos());
+            _supportOperators.Add(new OperatorAtan());
             _supportOperators.Add(new OperatorSqrt());
-            _supportOperators.Add(new OperatorLog());
+            // Logarithmic functions
+            _supportOperators.Add(new OperatorLog());      // Natural log
+            _supportOperators.Add(new OperatorLog10());    // Common log (base 10)
+            _supportOperators.Add(new OperatorLn());       // Alias for natural log
+            // Other functions
             _supportOperators.Add(new OperatorAbs());
             _supportOperators.Add(new OperatorPow());
             _supportOperators.Add(new OperatorExp());
