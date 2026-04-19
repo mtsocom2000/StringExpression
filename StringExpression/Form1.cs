@@ -13,6 +13,10 @@ namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
+        // Cursor offset constants for function insertion
+        private const int CURSOR_OFFSET_FOR_POW = 2;  // pow(,) - position before comma
+        private const int CURSOR_OFFSET_FOR_FUNCTION = 1;  // func() - position before closing paren
+
         public Form1()
         {
             InitializeComponent();
@@ -65,13 +69,13 @@ namespace WindowsFormsApp1
                 {
                     AppendToExpression("pow(,)");
                     // Move cursor back to position before the closing paren and comma
-                    txtExpression.SelectionStart = txtExpression.Text.Length - 2;
+                    txtExpression.SelectionStart = txtExpression.Text.Length - CURSOR_OFFSET_FOR_POW;
                 }
                 else
                 {
                     AppendToExpression(btn.Text + "()");
                     // Move cursor back to position before the closing paren
-                    txtExpression.SelectionStart = txtExpression.Text.Length - 1;
+                    txtExpression.SelectionStart = txtExpression.Text.Length - CURSOR_OFFSET_FOR_FUNCTION;
                 }
             }
         }
@@ -86,11 +90,11 @@ namespace WindowsFormsApp1
             {
                 if (btn.Text == "π")
                 {
-                    AppendToExpression("3.14159265358979");
+                    AppendToExpression(Math.PI.ToString());
                 }
                 else if (btn.Text == "e")
                 {
-                    AppendToExpression("2.71828182845905");
+                    AppendToExpression(Math.E.ToString());
                 }
             }
         }
@@ -160,13 +164,13 @@ namespace WindowsFormsApp1
             // Allow Enter key to calculate
             if (keyData == Keys.Enter)
             {
-                btnCalculate_Click(null, null);
+                btnCalculate_Click(this, EventArgs.Empty);
                 return true;
             }
             // Allow Escape key to clear
             if (keyData == Keys.Escape)
             {
-                btnClear_Click(null, null);
+                btnClear_Click(this, EventArgs.Empty);
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
