@@ -233,7 +233,6 @@ namespace ExpressionParser
             return result.ToString();
         }
     }
-
     /// <summary>
     /// Tan function - tan(x)
     /// </summary>
@@ -241,12 +240,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "tan"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "tan";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))
@@ -269,12 +268,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "asin"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "asin";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))
@@ -301,12 +300,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "acos"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "acos";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))
@@ -333,12 +332,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "atan"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "atan";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))
@@ -361,12 +360,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "log10"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "log10";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))
@@ -393,12 +392,12 @@ namespace ExpressionParser
     {
         public override string Name { get { return "ln"; } }
         public override int ArgumentCount { get { return 1; } }
-        
+
         public override bool Support(string opStr)
         {
             return opStr.ToLower() == "ln";
         }
-        
+
         public override string Calc(Expression expr)
         {
             if (!double.TryParse(expr.Left.CalcValue(), out var v))

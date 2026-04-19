@@ -20,15 +20,15 @@ namespace ExpressionParser
             // Math functions
             _supportOperators.Add(new OperatorSin());
             _supportOperators.Add(new OperatorCos());
-            _supportOperators.Add(new OperatorTan());      // NEW
-            _supportOperators.Add(new OperatorAsin());     // NEW
-            _supportOperators.Add(new OperatorAcos());     // NEW
-            _supportOperators.Add(new OperatorAtan());     // NEW
+            _supportOperators.Add(new OperatorTan());
+            _supportOperators.Add(new OperatorAsin());
+            _supportOperators.Add(new OperatorAcos());
+            _supportOperators.Add(new OperatorAtan());
             _supportOperators.Add(new OperatorSqrt());
             // Logarithmic functions
-            _supportOperators.Add(new OperatorLog());      // Natural log (ln)
-            _supportOperators.Add(new OperatorLog10());    // NEW - Common log (base 10)
-            _supportOperators.Add(new OperatorLn());       // NEW - Alias for natural log
+            _supportOperators.Add(new OperatorLog());      // Natural log
+            _supportOperators.Add(new OperatorLog10());    // Common log (base 10)
+            _supportOperators.Add(new OperatorLn());       // Alias for natural log
             // Other functions
             _supportOperators.Add(new OperatorAbs());
             _supportOperators.Add(new OperatorPow());
