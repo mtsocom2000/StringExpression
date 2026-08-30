@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -118,18 +119,38 @@ namespace ExpressionParser
             string functionName = currentFunctionName;
             Stack<char> bracketStack = new Stack<char>();
             NumericParserState numericParserState = NumericParserState.eEmpty;
+            // [P-2 fix] A digit run in right-operand position defers its Expression
+            // allocation: the old code assigned expr.Right once per digit character
+            // ("123" created 3 Expression objects, 2 of them garbage). The pending
+            // operand is flushed exactly once when the digit run ends (operator,
+            // bracket, or end of input).
+            bool rightPending = false;
             
             for (var i = currentIndex; i < expressionStr.Length; i++)
             {
                 var incomingChar = expressionStr[i];
-                if (string.IsNullOrWhiteSpace(incomingChar.ToString()))
+                if (char.IsWhiteSpace(incomingChar))
                 {
                     continue;
                 }
 
                 // Handle function name accumulation
-                if (currentState == ExpressionParserState.eExpectLeftExpression && Util.IsAlpha(incomingChar))
+                // [F-3 fix] Also recognize function names in right-operand position
+                // (e.g. "2*sin(1)") - previously only eExpectLeftExpression did, so the
+                // letters fell into the numeric FSA, were silently dropped, and the
+                // following '(' then threw "Expect operator but found bracket".
+                // [log10 fix] Digits continue a function name once it has started
+                // ("log10" used to parse as log + number 10 -> log(10)).
+                if ((currentState == ExpressionParserState.eExpectLeftExpression
+                     || currentState == ExpressionParserState.eExpectRightExpression)
+                    && (Util.IsAlpha(incomingChar)
+                        || (!string.IsNullOrEmpty(functionName) && Util.IsNumeric(incomingChar))))
                 {
+                    // [guard] digits immediately before an identifier are invalid ("2sin(x)")
+                    if (!string.IsNullOrEmpty(numericStr) && numericStr != "-" && numericStr != "+")
+                    {
+                        throw new ParserException($"Expected operator before identifier", i, expressionStr);
+                    }
                     functionName = functionName + incomingChar.ToString();
                     updateIndex = i;
                     continue;
@@ -138,29 +159,57 @@ namespace ExpressionParser
                 // Check if we have a function call (functionName followed by '(')
                 if (!string.IsNullOrEmpty(functionName) && Util.IsLeftBracket(incomingChar))
                 {
-                    var funcOp = OperatorFactory.Instance.Support(functionName.ToLower());
+                    var funcOp = OperatorFactory.Instance.Support(functionName);
                     if (funcOp != null && funcOp is FunctionOperator)
                     {
                         // We have a valid function call - parse the argument(s)
-                        bracketStack.Push(incomingChar);
-                        
+                        // [F-1 fix] No bracketStack.Push here: bracket matching is already
+                        // validated by FindMatchingBracket below, and the matching ')' is
+                        // consumed by this branch (skipped via i = argEndIndex). Pushing here
+                        // left an orphan entry that tripped the end-of-loop unmatched check.
+                        // Argument-internal brackets are handled by the recursive ParseToExpr.
+
                         // Create a new expression with the function operator
                         var funcExpr = new Expression();
                         funcExpr.Operator = funcOp;
                         funcExpr.BracketState = BracketState.eLeft;
                         
                         // Link it properly to the parent expression
-                        if (expr.IsValid || expr.BracketState == BracketState.eLeft)
+                        // [Bug #2/#3 fix] A pending bare +/- immediately before a function
+                        // call is a prefix operator, not part of a number. "-sin(5)" used to
+                        // lose the sign when the Left setter nulled the accumulated value.
+                        // '-' wraps the call in a Negate node; '+' is identity.
+                        // NOTE: attachNode may differ from funcExpr (the real call node) -
+                        // argument assignment below must keep targeting funcExpr.
+                        Expression attachNode = funcExpr;
+                        if (numericStr == "-" || numericStr == "+")
                         {
-                            // This shouldn't happen in normal flow, but handle it
-                            expr.Left = funcExpr;
+                            bool isMinus = numericStr == "-";
+                            numericStr = String.Empty;
+                            numericParserState = NumericParserState.eEmpty;
+
+                            if (isMinus)
+                            {
+                                funcExpr.BracketState = BracketState.eClosed; // the call itself is complete
+                                var negateNode = new Expression();
+                                negateNode.Value = null; // keep the Operator setter from moving a default "0" into Left
+                                negateNode.Operator = new OperatorNegate();
+                                negateNode.Right = funcExpr;
+                                negateNode.BracketState = BracketState.eClosed; // complete operand wrapper
+                                attachNode = negateNode;
+                            }
                         }
-                        else
-                        {
-                            // Set the function expression as the current expression's value/left
-                            expr.Value = null;
-                            expr.Left = funcExpr;
-                        }
+
+                        // [F-2/F-3 fix] Attach the completed function call (possibly wrapped
+                        // in a Negate node by the unary dispatch above).
+                        //   - right-operand position (eExpectRightExpression): expr.Right
+                        //   - untouched root placeholder: discard it, funcExpr becomes the
+                        //     active node itself - a following operator then hits the
+                        //     standard Parent==null wrap branch of the rotation machinery
+                        //   - otherwise (bracket holder etc.): Left link; a valueless,
+                        //     operatorless holder collapses transparently in
+                        //     Expression.CalcValue (F-4)
+                        expr = AttachOperandNode(expr, attachNode, currentState == ExpressionParserState.eExpectRightExpression);
                         
                         // Parse the argument expression inside the parentheses
                         int argStartIndex = i + 1;
@@ -201,10 +250,11 @@ namespace ExpressionParser
                         }
                         
                         funcExpr.BracketState = BracketState.eClosed;
-                        
+                        attachNode.BracketState = BracketState.eClosed;
+
                         // Update state and continue after the closing bracket
-                        expr = funcExpr;
-                        updatedExpr = expr;
+                        expr = attachNode;
+                        updatedExpr = attachNode;
                         i = argEndIndex;
                         updateIndex = argEndIndex;
                         functionName = String.Empty;
@@ -227,6 +277,40 @@ namespace ExpressionParser
                 // Handle left bracket: push to stack and create nested expression
                 if (Util.IsLeftBracket(incomingChar))
                 {
+                    // [Bug #2 fix] Unary sign dispatch: a pending bare +/- followed by '('
+                    // is a prefix operator, not part of the number inside. "-(2+3)" used to
+                    // mis-bind the sign onto the first digit inside the brackets.
+                    // '-' wraps the bracket sub-expression in a Negate node; '+' is identity.
+                    if (numericStr == "-" || numericStr == "+")
+                    {
+                        bool isMinus = numericStr == "-";
+                        numericStr = String.Empty;
+                        numericParserState = NumericParserState.eEmpty;
+
+                        var operandExpr = new Expression();
+                        operandExpr.BracketState = BracketState.eLeft;
+
+                        Expression attachNode = operandExpr;
+                        if (isMinus)
+                        {
+                            var negateNode = new Expression();
+                            negateNode.Value = null; // keep the Operator setter from moving a default "0" into Left
+                            negateNode.Operator = new OperatorNegate();
+                            negateNode.Right = operandExpr;
+                            negateNode.BracketState = BracketState.eClosed; // complete operand wrapper
+                            attachNode = negateNode;
+                        }
+
+                        expr = AttachOperandNode(expr, attachNode, currentState == ExpressionParserState.eExpectRightExpression);
+
+                        bracketStack.Push(incomingChar);
+                        expr = operandExpr;
+                        updatedExpr = operandExpr;
+                        currentState = ExpressionParserState.eExpectLeftExpression;
+                        updateIndex = i;
+                        continue;
+                    }
+
                     bracketStack.Push(incomingChar);
                     if (currentState == ExpressionParserState.eExpectLeftExpression)
                     {
@@ -250,6 +334,10 @@ namespace ExpressionParser
                         var newExpr = new Expression();
                         newExpr.BracketState = BracketState.eLeft;
                         expr.Right = newExpr;
+                        // [P-2 fix] The bracket overwrites any pending digit run - the
+                        // Right setter below discards it, so the flag must be cleared to
+                        // keep a later end-of-loop flush from writing into newExpr.
+                        rightPending = false;
                         expr = newExpr;
                         updatedExpr = newExpr;
                         currentState = ExpressionParserState.eExpectLeftExpression;
@@ -273,6 +361,15 @@ namespace ExpressionParser
                     if (!Util.BracketsMatch(expectedLeftBracket, incomingChar))
                     {
                         throw new ParserException($"Bracket mismatch: expected '{Util.GetMatchingRightBracket(expectedLeftBracket)}' but found '{incomingChar}'", i, expressionStr);
+                    }
+
+                    // [P-2 fix] The right-bracket branch intercepts the char before the
+                    // numeric FSA can see it, so "(2+3)" closes without the eEnd flush
+                    // ever running. Flush the pending Right operand before closing.
+                    if (rightPending)
+                    {
+                        expr.Right = new Expression(numericStr);
+                        rightPending = false;
                     }
                     
                     while (expr != null && expr.BracketState != BracketState.eLeft)
@@ -314,13 +411,13 @@ namespace ExpressionParser
                 }
 
                 // Handle comma separator for multi-argument functions
+                // [Bug #4 fix] A comma can only ever appear inside function arguments,
+                // and those are extracted (SplitFunctionArguments) before the main loop
+                // sees them - so a comma here is always invalid input. It used to be
+                // silently accepted, dropping everything after it ("1,2" -> 1).
                 if (Util.IsComma(incomingChar) && currentState == ExpressionParserState.eExpectOperator)
                 {
-                    // Comma is used as argument separator in functions
-                    // For now, we treat it as ending the current argument expression
-                    updateIndex = i;
-                    isValid = true;
-                    return (isValid, currentState, updatedExpr, updateIndex, numericStr, functionName);
+                    throw new ParserException("Comma is only valid inside function arguments", i, expressionStr);
                 }
 
                 if (currentState == ExpressionParserState.eExpectOperator)
@@ -330,28 +427,82 @@ namespace ExpressionParser
                     {
                         if (expr.IsValid || expr.BracketState == BracketState.eLeft)
                         {
-                            if (expr.State != ExpressionState.eValueOnly)
+                            // [climb fix] A CLOSED node is an atomic operand even when its
+                            // content is a single value ("(3)"): without the eClosed escape,
+                            // the Operator setter below would move "(3)"'s value into the new
+                            // operator's Left, silently flattening the bracket ("2*(3)+1" -> 8).
+                            if (expr.State != ExpressionState.eValueOnly || expr.BracketState == BracketState.eClosed)
                             {
                                 if (expr.BracketState == BracketState.eClosed)
                                 {
                                     if (expr.Parent != null)
                                     {
-                                        Expression tempExpr = expr;
-                                        while (tempExpr.Parent != null)
+                                        // [climb fix] The closed sub-tree is an atomic operand. Find
+                                        // the attachment point for the incoming operator by climbing
+                                        // past strictly-stricter ancestors:
+                                        //   - open holder (no operator yet) -> operator becomes its own
+                                        //   - ancestor priority == op -> left-assoc: wrap ABOVE ancestor
+                                        //   - ancestor priority <  op -> descend: take over ancestor's Right
+                                        //   - exhausted (all stricter, incl. Negate wrappers) -> wrap above all
+                                        // The old code only ever spliced into the parent's Right, silently
+                                        // computing "2*(3)+1"=8, "10-(2)+3"=5, "8/(2)+2"=2, "8/(2)*3"=1.33
+                                        // (empirically confirmed on HEAD).
+                                        Expression attachAt = expr.Parent;
+                                        while (attachAt != null
+                                               && attachAt.BracketState != BracketState.eLeft
+                                               && attachAt.Operator != null
+                                               && attachAt.Operator.Priority > op.Priority)
                                         {
-                                            tempExpr = tempExpr.Parent;
-                                            if ((tempExpr.Operator != null && tempExpr.Operator.Priority <= op.Priority) || (tempExpr.BracketState & BracketState.eLeft) == BracketState.eLeft)
-                                            {
-                                                expr = tempExpr;
-                                                break;
-                                            }
+                                            attachAt = attachAt.Parent;
                                         }
 
-                                        if (tempExpr.Operator != null)
+                                        var newExpr = new Expression();
+                                        if (attachAt == null)
                                         {
-                                            var newExpr = new Expression();
-                                            newExpr.Left = tempExpr.Right;
-                                            tempExpr.Right = newExpr;
+                                            // exhausted above the root: the whole chain becomes Left.
+                                            // Find the topmost ancestor BEFORE linking - the Left setter
+                                            // below rewrites expr.Parent, and walking Parent afterwards
+                                            // would loop on newExpr itself.
+                                            var top = expr;
+                                            while (top.Parent != null)
+                                            {
+                                                top = top.Parent;
+                                            }
+                                            newExpr.Left = top;
+                                            expr = newExpr;
+                                        }
+                                        else if (attachAt.BracketState == BracketState.eLeft && attachAt.Operator == null)
+                                        {
+                                            // open holder adopts the operator (parsed content stays Left)
+                                            expr = attachAt;
+                                        }
+                                        else if (attachAt.Operator != null && attachAt.Operator.Priority == op.Priority)
+                                        {
+                                            // left-associative: wrap above the ancestor
+                                            // (capture the old parent FIRST - the Left setter below
+                                            //  rewrites attachAt.Parent, and relinking against the new
+                                            //  parent would create a self-cycle and hang the parser)
+                                            var oldParent = attachAt.Parent;
+                                            newExpr.Left = attachAt;
+                                            if (oldParent != null)
+                                            {
+                                                if (ReferenceEquals(oldParent.Left, attachAt))
+                                                {
+                                                    oldParent.Left = newExpr;
+                                                }
+                                                else
+                                                {
+                                                    oldParent.Right = newExpr;
+                                                }
+                                            }
+                                            expr = newExpr;
+                                        }
+                                        else
+                                        {
+                                            // ancestor binds looser: the new operator descends into its
+                                            // Right, taking over the completed atomic sub-tree
+                                            newExpr.Left = expr;
+                                            attachAt.Right = newExpr;
                                             expr = newExpr;
                                         }
                                     }
@@ -393,7 +544,7 @@ namespace ExpressionParser
                                         while (expr.BracketState != BracketState.eLeft && expr.Parent != null)
                                         {
                                             expr = expr.Parent;
-                                            if (expr.Operator.Priority <= op.Priority)
+                                            if (expr.Operator != null && expr.Operator.Priority <= op.Priority)
                                             {
                                                 break;
                                             }
@@ -445,7 +596,9 @@ namespace ExpressionParser
                         }
                         else
                         {
-                            System.Diagnostics.Debug.Assert(false);
+                            // [H-3 fix] Debug.Assert is a no-op in Release builds and used to
+                            // leave the tree in an inconsistent state - fail loudly instead.
+                            throw new ParserException("Invalid expression state: operator encountered on incomplete node", i, expressionStr);
                         }
                         expr.Operator = op;
                         currentState = ExpressionParserState.eExpectRightExpression;
@@ -465,10 +618,25 @@ namespace ExpressionParser
                         }
                         numericParserState = nextState.updatedState;
                         numericStr = nextState.updatedNumericStr;
-                        expr.Right = new Expression(numericStr);
+                        // [P-2 fix] Mark the digit run as a pending operand instead of
+                        // allocating per character. A lone sign ("-" / "+") is not an
+                        // operand (same guard as the identifier check above) and never
+                        // becomes pending.
+                        if (numericStr.Length > 0 && numericStr != "-" && numericStr != "+")
+                        {
+                            rightPending = true;
+                        }
                     }
                     else
                     {
+                        // [P-2 fix] Digit run ended (operator / bracket / comma follows):
+                        // flush the completed operand once, then let the next char be
+                        // re-processed in eExpectOperator.
+                        if (rightPending)
+                        {
+                            expr.Right = new Expression(numericStr);
+                            rightPending = false;
+                        }
                         currentState = ExpressionParserState.eExpectOperator;
                         i--;
                     }
@@ -477,8 +645,26 @@ namespace ExpressionParser
                 updateIndex = i;
             }
 
+            // [P-2 fix] Flush a pending trailing digit run ("2+3"): the loop ends
+            // without a state transition, so the deferred Right assignment happens
+            // here, before IsValid is computed.
+            if (rightPending)
+            {
+                expr.Right = new Expression(numericStr);
+                rightPending = false;
+            }
+
             isValid = expr.IsValid;
-            
+
+            // [H-4 fix] A trailing partial number ("-", "-.", "+") never fails the FSA -
+            // it just sits in numericStr and used to reach CalcValue as a raw string,
+            // throwing FormatException instead of ParserException at eval time.
+            if (!string.IsNullOrEmpty(numericStr)
+                && !double.TryParse(numericStr, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+            {
+                throw new ParserException($"Invalid number '{numericStr}'", updateIndex, expressionStr);
+            }
+
             // Check if all brackets have been properly closed
             if (bracketStack.Count > 0)
             {
@@ -487,6 +673,48 @@ namespace ExpressionParser
             }
             
             return (isValid, ExpressionParserState.eEnd, updatedExpr, updateIndex, numericStr, functionName);
+        }
+
+        /// <summary>
+        /// [F-2 fix] True when the node is the untouched root placeholder created by
+        /// ParseToExpr (default state, no operator, no children, no bracket, no parent).
+        /// Such a node can be discarded when a completed function call should become
+        /// the active expression itself.
+        /// </summary>
+        private static bool IsFreshPlaceholder(Expression expr)
+        {
+            return expr.Parent == null
+                && expr.BracketState == BracketState.eNone
+                && expr.State == ExpressionState.eValueOnly
+                && expr.Operator == null
+                && expr.Left == null
+                && expr.Right == null;
+        }
+
+        /// <summary>
+        /// [F-2/F-3 fix] Attach a completed operand node (function call / negate
+        /// wrapper) to the current tree position and return the node that becomes the
+        /// active expression:
+        ///   - right-operand position (eExpectRightExpression) -> expr.Right
+        ///   - untouched root placeholder -> the node itself replaces the placeholder
+        ///   - otherwise (bracket holder etc.) -> Left link (valueless, operatorless
+        ///     holders collapse transparently in Expression.CalcValue)
+        /// </summary>
+        private static Expression AttachOperandNode(Expression expr, Expression node, bool rightOperandPosition)
+        {
+            if (rightOperandPosition)
+            {
+                expr.Right = node;
+            }
+            else if (IsFreshPlaceholder(expr))
+            {
+                return node;
+            }
+            else
+            {
+                expr.Left = node;
+            }
+            return node;
         }
 
         /// <summary>

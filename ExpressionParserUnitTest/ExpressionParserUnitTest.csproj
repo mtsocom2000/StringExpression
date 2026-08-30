@@ -51,6 +51,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExpressionBuilderUnitTest.cs" />
+    <Compile Include="FunctionUnitTest.cs" />
+    <Compile Include="ParserBugRegressionTests.cs" />
     <Compile Include="OperatorUnitTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="OperatorFactoryUnitTest.cs" />

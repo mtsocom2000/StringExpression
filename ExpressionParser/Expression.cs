@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,9 +11,9 @@ namespace ExpressionParser
     {
         eInvalid = 0,
         eValueOnly = 1,
-        eLeftValueValid,
-        eRightValueValid,
-        eOperatorValid,
+        eLeftValueValid = 2,
+        eRightValueValid = 4,
+        eOperatorValid = 8,
         eAllValid = eLeftValueValid | eRightValueValid | eOperatorValid,
     }
     public enum BracketState
@@ -25,6 +26,7 @@ namespace ExpressionParser
     public class Expression
     {
         private string _value = string.Empty;
+        private double? _numericCache;
         protected Expression _left;
         protected Expression _right;
         protected Operator _op;
@@ -39,7 +41,7 @@ namespace ExpressionParser
 
         public Expression(double v)
         {
-            _value = v.ToString();
+            _value = v.ToString(CultureInfo.InvariantCulture);
             _state = ExpressionState.eValueOnly;
         }
 
@@ -54,6 +56,7 @@ namespace ExpressionParser
             set
             {
                 _value = value;
+                _numericCache = null;
             }
         }
 
@@ -71,7 +74,34 @@ namespace ExpressionParser
             {
                 return _value;
             }
+            if (_op == null)
+            {
+                // [F-4 fix] Transparent wrapper: a bracket holder whose content turned out
+                // to be a single sub-expression (e.g. "(sin(1))") carries neither a value
+                // nor an operator - collapse to the only child instead of null-referencing.
+                // (Semantics pre-figured by the retired OperatorBracket.Calc.)
+                if (_left != null && _right == null)
+                {
+                    return _left.CalcValue();
+                }
+                throw new ParserException("Invalid expression node: no value and no operator");
+            }
             return _op.Calc(this);
+        }
+
+        /// <summary>
+        /// [P-1] Numeric view of this node: leaves parse their value once and cache;
+        /// operator nodes evaluate (recursively via CalcValue) once and cache. Operators
+        /// use this instead of double.Parse(CalcValue()) string round-trips per eval.
+        /// The cache is invalidated by every mutating setter below.
+        /// </summary>
+        public double ToNumber()
+        {
+            if (!_numericCache.HasValue)
+            {
+                _numericCache = double.Parse(CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture);
+            }
+            return _numericCache.Value;
         }
 
         public Expression Left
@@ -81,6 +111,7 @@ namespace ExpressionParser
             {
                 _value = null;
                 _left = value;
+                _numericCache = null;
                 value.Parent = this;
                 if (_state == ExpressionState.eInvalid || _state == ExpressionState.eValueOnly)
                 {
@@ -99,6 +130,7 @@ namespace ExpressionParser
             set
             {
                 _right = value;
+                _numericCache = null;
                 value.Parent = this;
                 if (_state == ExpressionState.eInvalid || _state == ExpressionState.eValueOnly)
                 {
@@ -117,6 +149,7 @@ namespace ExpressionParser
             set
             {
                 _op = value;
+                _numericCache = null;
                 // move _value to left if had value before
                 if (!String.IsNullOrEmpty(_value))
                 {
