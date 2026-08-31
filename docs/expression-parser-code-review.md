@@ -385,3 +385,76 @@ $src  = "E:\code\StringExpression\ExpressionParser"
 | P-2 | 逐字符 Right 分配 | rightPending 延迟分配，eEnd/右括号/主循环末尾三处 flush |
 
 **计划外修复**（实施过程中发现并确认的缺陷）：climb-splice 错误类（"2*(3)+1"=8、"10-(2)+3"=5、"8/(2)+2"=2、"8/(2)*3"=1.33，HEAD 实证）、log10 名字截断、"2sin(x)" 静默、两处 wrap-above/exhaust 自环挂起。
+
+---
+
+## 附录 C：与经典表达式解析算法的横向对比（时间/空间/劣势）
+
+**当前算法定位**：单遍字符级 FSA + 可变树 + setter 触发的就地旋转（Operator/Left/Right setter 内部隐式完成优先级重排），求值为递归树遍历的字符串通路。
+
+### C.1 对比对象
+
+Dijkstra shunting-yard（两栈直算 / RPN 输出）、递归下降（语法分层）、Pratt 解析 / precedence climbing（绑定力驱动）、表驱动 LL/LR（重机械，仅作参照）。
+
+### C.2 时间复杂度对比
+
+| 算法 | 解析时间 | 关键机制 | 实测量级 |
+|---|---|---|---|
+| **当前（FSA+旋转树）** | O(n)，常数大 | 每字符 FSA 转移；每运算符 climb+旋转 | 解析 2.54 µs/op（i5-13600KF，见微基准节） |
+| **Shunting-yard（两栈）** | O(n)，常数小 | 每 token 压/弹栈各一次，效果全在循环内局部 | 同量级，无字符串拼接 |
+| **递归下降** | O(n) | 每优先级一层函数；经典分层语法每个终态符穿 N 层调用 | 略低于 shunting-yard |
+| **Pratt / precedence climbing** | O(n)，常数最小 | "每 token 只需两三次调用"（Bendersky）；每二元运算符至多一次递归 | 工业解析器首选（Clang 即此） |
+
+**当前算法时间损耗点**（相对上述三者）：
+
+1. **数字词元 O(k²)**：`numericStr + incomingChar` 每字符重建字符串（`ExpressionBuilder.cs` 5 处，约 800-860 行），且每字符额外 `ToString()` 分配。shunting-yard/Pratt 的 tokenizer 用 StringBuilder 或 span 切片 = O(k)。
+2. **旋转的指针 churn**：每次运算符到达触发 climb+wrap/descend，重写 Parent/Left/Right 三指针并可能级联向上；两栈法等价操作只是栈弹压，效果全部局部于循环。
+3. **逐字符 FSA**：省掉 O(n) token 数组（优势），但空白/符号/边界逻辑全部内联在 FSA 里——本批 4 个根因 bug 全部聚居于此。
+
+### C.3 空间复杂度对比
+
+| 算法 | 解析期额外空间 | 常驻结构 | 单节点成本 |
+|---|---|---|---|
+| **当前** | O(1) 栈 + O(n) 节点流 | 重型可变树 | ≈80B/节点（5 字段 + 3 引用 + `Nullable<double>` 缓存）+ 每数字叶子 string 对象（~40B） |
+| Shunting-yard→RPN | O(n) 输出队列 | RPN token 数组 | 8B/token（double）或引用 |
+| Shunting-yard→两栈直算 | O(depth) 操作数栈 | **无树**（不留 AST） | 8B/操作数 |
+| 递归下降 / Pratt | O(depth) 调用栈 | 轻量 AST | 典型 immutable 节点 ~32B（无 Parent 指针/无状态字段/无缓存） |
+
+劣势：当前节点比轻量 AST 重 2-3 倍（Parent 指针 + 2 个状态枚举 + 数值缓存都是"就地旋转"的基础设施）；比两栈直算多出一个完整 AST——两栈法根本不建树，内存下限 O(depth)。
+
+### C.4 当前算法劣势排序（按实际影响）
+
+| # | 劣势 | 证据 | 影响场景 |
+|---|---|---|---|
+| 1 | **字符串化数值通路**：解析存 string → 求值 TryParse → 算 → ToString，每节点往返一次 | P-1 缓存后重复求值 5.7× 提升反证瓶颈所在；冷求值仍需每节点 TryParse | 一切求值路径。两栈法/RPN 法全程纯 double，零转换 |
+| 2 | **求值递归深度=树高**：`1+1+1+...` 左结合链树深≈n，CalcValue 递归会 StackOverflow | 同类真实事故：Apache DataFusion 20 万深 OR 链 Drop 溢出（PR #23198）、Ledger 2000 层括号耗尽 8MB 栈（issue #3248）。显式操作数栈只需 ~200 堆条目 | 长表达式。计算器 UI 不会触发，但这是算法级软肋，且**无深度限制** |
+| 3 | **仅支持左结合**：`==` 优先级 wrap-above 硬编码左结合语义 | 现有 climb 分支结构 | 无法自然表达 `^` 幂（数学惯例右结合：2^3^2=2^9）。shunting-yard 只改一个比较符（`>=`→`>`），Pratt 改一个参数（`lbp-1`） |
+| 4 | **旋转机制推理成本高（非局部副作用）**：一个属性赋值触发子树重排，可能级联向上 | 本批 4 个根因 bug（climb-splice 类、两处自环）全部位于旋转分支——**实证**的 bug 密度 | 可维护性/正确性成本，最实质的工程劣势 |
+| 5 | **数字词元 O(k²) 拼接**（含每字符 ToString 分配） | 5 处 `currentNumericStr + incomingChar` | 长数字输入放大 GC 压力 |
+| 6 | **非可重入/非流式**：setter 副作用使解析状态散布于树本身 | 旋转逻辑读取并改写全局树形 | 流式输入、并发解析、增量重解析不适用（当前用例不需要） |
+
+### C.5 当前算法的公平优势
+
+- **单遍无 token 数组**：峰值内存低于"先 tokenize 再 parse"两阶段方案
+- **主循环零递归**（括号用状态机下降，仅函数参数递归）：解析期栈深安全，好于朴素递归下降
+- **P-1 缓存后重复求值极快**（0.167 µs/op 实测）：可变树的副作用 setter 恰好是天然的失效钩子——immutable AST 需手动失效或重建
+- **可变树支持增量场景**：若需要"改一个节点重算"，当前结构比重建 RPN/AST 更直接
+
+### C.6 结论与建议
+
+**当前用例（WinForms 计算器：短表达式、单次求值）下，劣势 1/2/5/6 实际不成立**——2.5 µs 解析和几百字节的树无关痛痒。真正成立的只有 **#4（推理成本）**，而它已被 146 个测试 + 文档锚定。
+
+若劣势场景成真，优先级建议：
+
+1. **求值层 double 化**（方案 A-1 方向）：`Calc(double[])` 替代 string 往返——收益最大、不动解析器
+2. **数字拼接改 index 切片**（P-5 姊妹项）——机械改动
+3. **求值/解析深度限制**（如 1024）+ 左结合链的显式栈求值——防溢出护栏
+4. **右结合运算符**需求出现时，当前旋转机制比换 Pratt 更难改——届时才值得评估替换解析器核心
+
+一句话总结：**当前算法输在常数因子和推理成本，不输在渐进复杂度**——所有知名算法时间都是 O(n)，差距在"O(n) 里每步做什么"：字符串通路（慢 5.7×）与旋转 churn 是主差，而这正是"保持现有架构"路线下已经最小化的部分。
+
+### C.7 外部参考
+
+- Shunting-yard 复杂度与结合性弹栈规则：Wikipedia "Shunting-yard algorithm"；Nathan Reed "The Shunting-Yard Algorithm"
+- Pratt 解析 / TDOP / precedence climbing 等价性与深度特性：Eli Bendersky（2010 TDOP、2012 precedence climbing）；Andy Chu（Oilshell，TDOP ≡ precedence climbing）；Pratt 1973 POPL；Crockford TDOP；Martin Fowler
+- 深链树遍历溢出案例：Apache DataFusion PR #23198（20 万深链迭代化 Drop）；Ledger issue #3248（Clang 式 15 帧/层，2000 层耗尽 8MB 栈；求值器限深 1024）
