@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +23,9 @@ namespace ExpressionParser
         }
 
         public abstract string Name { get; }
-        
+
+        public override string Symbol => Name;
+
         public abstract int ArgumentCount { get; }
     }
 
@@ -36,12 +39,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "sin";
+            return string.Equals(opStr, "sin", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for sin: {expr.Left.CalcValue()}");
             }
@@ -50,7 +53,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for sin({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -64,12 +67,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "cos";
+            return string.Equals(opStr, "cos", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for cos: {expr.Left.CalcValue()}");
             }
@@ -78,7 +81,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for cos({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -92,12 +95,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "sqrt";
+            return string.Equals(opStr, "sqrt", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for sqrt: {expr.Left.CalcValue()}");
             }
@@ -110,7 +113,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for sqrt({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -124,12 +127,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "log";
+            return string.Equals(opStr, "log", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for log: {expr.Left.CalcValue()}");
             }
@@ -142,7 +145,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for log({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -156,12 +159,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "abs";
+            return string.Equals(opStr, "abs", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for abs: {expr.Left.CalcValue()}");
             }
@@ -170,7 +173,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for abs({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -184,16 +187,16 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "pow";
+            return string.Equals(opStr, "pow", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var x))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var x))
             {
                 throw new ParserException($"Invalid numeric argument for pow: {expr.Left.CalcValue()}");
             }
-            if (!double.TryParse(expr.Right.CalcValue(), out var y))
+            if (!double.TryParse(expr.Right.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
             {
                 throw new ParserException($"Invalid numeric argument for pow: {expr.Right.CalcValue()}");
             }
@@ -202,7 +205,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for pow({x}, {y})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -216,12 +219,12 @@ namespace ExpressionParser
         
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "exp";
+            return string.Equals(opStr, "exp", StringComparison.OrdinalIgnoreCase);
         }
         
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for exp: {expr.Left.CalcValue()}");
             }
@@ -230,7 +233,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for exp({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
     /// <summary>
@@ -243,12 +246,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "tan";
+            return string.Equals(opStr, "tan", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for tan: {expr.Left.CalcValue()}");
             }
@@ -257,7 +260,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for tan({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -271,12 +274,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "asin";
+            return string.Equals(opStr, "asin", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for asin: {expr.Left.CalcValue()}");
             }
@@ -289,7 +292,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for asin({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -303,12 +306,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "acos";
+            return string.Equals(opStr, "acos", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for acos: {expr.Left.CalcValue()}");
             }
@@ -321,7 +324,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for acos({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -335,12 +338,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "atan";
+            return string.Equals(opStr, "atan", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for atan: {expr.Left.CalcValue()}");
             }
@@ -349,7 +352,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for atan({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -363,12 +366,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "log10";
+            return string.Equals(opStr, "log10", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for log10: {expr.Left.CalcValue()}");
             }
@@ -381,7 +384,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for log10({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -395,12 +398,12 @@ namespace ExpressionParser
 
         public override bool Support(string opStr)
         {
-            return opStr.ToLower() == "ln";
+            return string.Equals(opStr, "ln", StringComparison.OrdinalIgnoreCase);
         }
 
         public override string Calc(Expression expr)
         {
-            if (!double.TryParse(expr.Left.CalcValue(), out var v))
+            if (!double.TryParse(expr.Left.CalcValue(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
             {
                 throw new ParserException($"Invalid numeric argument for ln: {expr.Left.CalcValue()}");
             }
@@ -413,7 +416,7 @@ namespace ExpressionParser
             {
                 throw new ParserException($"Invalid result for ln({v})");
             }
-            return result.ToString();
+            return result.ToString(CultureInfo.InvariantCulture);
         }
     }
 }
